@@ -3,150 +3,362 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Casino Mini App</title>
+  <title>Рулетка Telegram</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
     body {
       margin: 0;
-      padding: 20px;
-      background: #121214;
+      padding: 16px;
+      background: #0d1711;
       color: #ffffff;
-      font-family: sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 90vh;
+      min-height: 100vh;
       text-align: center;
-      -webkit-user-select: none;
-      user-select: none;
+      overflow: hidden;
     }
-    .balance-box {
-      font-size: 1.4rem;
-      font-weight: bold;
-      margin-bottom: 25px;
-      color: #f5a623;
-    }
-    .machine {
-      background: #1f2024;
-      padding: 20px;
+    .balance-card {
+      background: #18261e;
+      border: 1px solid #284433;
+      padding: 10px 24px;
       border-radius: 20px;
-      border: 2px solid #2d3038;
-      display: flex;
-      gap: 12px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      margin-bottom: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     }
-    .reel {
-      width: 75px;
-      height: 90px;
-      background: #0d0d0f;
-      border-radius: 12px;
+    .balance-val {
+      font-size: 1.4rem;
+      font-weight: 800;
+      color: #ffd700;
+    }
+    .wheel-container {
+      position: relative;
+      width: 290px;
+      height: 290px;
+      margin: 0 auto;
+    }
+    canvas {
+      width: 290px;
+      height: 290px;
+      border-radius: 50%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.8), 0 0 0 6px #243b2d;
+    }
+    .pointer {
+      position: absolute;
+      top: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 0;
+      height: 0;
+      border-left: 12px solid transparent;
+      border-right: 12px solid transparent;
+      border-top: 22px solid #ffd700;
+      z-index: 10;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+    }
+    .status-box {
+      margin-top: 14px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      min-height: 28px;
+      color: #eaeaea;
+    }
+    .bet-title {
+      font-size: 0.85rem;
+      color: #8da394;
+      margin-top: 12px;
+      margin-bottom: 6px;
+    }
+    .bet-options {
       display: flex;
-      align-items: center;
+      gap: 8px;
       justify-content: center;
-      font-size: 3rem;
-      border: 1px solid #333;
+      margin-bottom: 16px;
     }
-    .result-text {
-      margin-top: 25px;
-      font-size: 1.2rem;
-      font-weight: bold;
-      min-height: 30px;
+    .bet-btn {
+      padding: 9px 14px;
+      font-size: 0.9rem;
+      font-weight: 700;
+      border: 2px solid transparent;
+      border-radius: 12px;
+      cursor: pointer;
+      color: #fff;
     }
-    .controls {
-      margin-top: 30px;
+    .bet-red { background: #b81414; }
+    .bet-black { background: #222222; border: 1px solid #444; }
+    .bet-green { background: #197a36; }
+
+    .bet-btn.selected {
+      border-color: #ffd700;
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.7);
+      transform: scale(1.05);
     }
     .spin-btn {
-      background: #e50914;
-      color: #ffffff;
+      background: linear-gradient(180deg, #ffd700 0%, #d4af37 100%);
+      color: #111;
       border: none;
-      padding: 16px 50px;
-      font-size: 1.3rem;
-      font-weight: bold;
-      border-radius: 40px;
+      width: 220px;
+      height: 50px;
+      font-size: 1.25rem;
+      font-weight: 800;
+      border-radius: 25px;
       cursor: pointer;
-      box-shadow: 0 4px 15px rgba(229, 9, 20, 0.4);
+      box-shadow: 0 6px 18px rgba(212, 175, 55, 0.4);
     }
-    .spin-btn:active {
-      transform: scale(0.95);
-      background: #b80710;
+    .spin-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
     }
   </style>
 </head>
 <body>
 
-  <div class="balance-box">Баланс: <span id="balance">1000</span> 🪙</div>
-
-  <div class="machine">
-    <div class="reel" id="r1">🍒</div>
-    <div class="reel" id="r2">🍋</div>
-    <div class="reel" id="r3">7️⃣</div>
+  <div class="balance-card">
+    Баланс: <span class="balance-val" id="balance">...</span> 🪙
   </div>
 
-  <div class="result-text" id="status">Нажмите кнопку «КРУТИТЬ»!</div>
-
-  <div class="controls">
-    <button class="spin-btn" id="btn" onclick="startSpin()">КРУТИТЬ</button>
+  <div class="wheel-container">
+    <div class="pointer"></div>
+    <canvas id="wheelCanvas" width="580" height="580"></canvas>
   </div>
+
+  <div class="status-box" id="status">Загрузка данных...</div>
+
+  <div class="bet-title">Ставка: 50 монет на выбор:</div>
+  <div class="bet-options">
+    <button class="bet-btn bet-red selected" id="btnRed" onclick="chooseBet('red')">КРАСНОЕ (x2)</button>
+    <button class="bet-btn bet-black" id="btnBlack" onclick="chooseBet('black')">ЧЁРНОЕ (x2)</button>
+    <button class="bet-btn bet-green" id="btnGreen" onclick="chooseBet('green')">0 (x14)</button>
+  </div>
+
+  <button class="spin-btn" id="spinBtn" onclick="spinWheel()" disabled>КРУТИТЬ</button>
 
   <script>
-    var symbols = ["🍒", "🍋", "🍇", "🔔", "7️⃣"];
-    var balance = 1000;
-    var bet = 50;
-    var spinning = false;
-
-    function getRandomItem() {
-      return symbols[Math.floor(Math.random() * symbols.length)];
+    // 1. Инициализация Telegram Mini App
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      try {
+        tg.ready();
+        tg.expand();
+        tg.disableVerticalSwipes?.();
+      } catch (e) {}
     }
 
-    function startSpin() {
-      if (spinning) return;
+    // 2. Механизм постоянного сохранения баланса
+    let balance = 1000;
+    const betAmount = 50;
+    const STORAGE_KEY = "roulette_player_balance";
 
-      if (balance < bet) {
-        document.getElementById("status").innerText = "Недостаточно монет!";
+    function updateBalanceUI() {
+      document.getElementById('balance').innerText = balance;
+    }
+
+    function saveBalance() {
+      updateBalanceUI();
+      // Локальное резервное сохранение
+      try {
+        localStorage.setItem(STORAGE_KEY, balance.toString());
+      } catch (e) {}
+
+      // Облачное сохранение в профиль Telegram
+      try {
+        if (tg?.CloudStorage?.setItem) {
+          tg.CloudStorage.setItem(STORAGE_KEY, balance.toString(), (err, stored) => {
+            if (err) console.error("CloudStorage save error", err);
+          });
+        }
+      } catch (e) {}
+    }
+
+    function loadBalance() {
+      // Сначала проверяем облако Telegram, если недоступно — берём из localStorage
+      if (tg?.CloudStorage?.getItem) {
+        tg.CloudStorage.getItem(STORAGE_KEY, (err, val) => {
+          if (!err && val) {
+            balance = parseInt(val, 10);
+          } else {
+            const local = localStorage.getItem(STORAGE_KEY);
+            if (local) balance = parseInt(local, 10);
+          }
+          finishInitBalance();
+        });
+      } else {
+        const local = localStorage.getItem(STORAGE_KEY);
+        if (local) balance = parseInt(local, 10);
+        finishInitBalance();
+      }
+    }
+
+    function finishInitBalance() {
+      if (isNaN(balance) || balance < betAmount) {
+        balance = 1000; // Бонус новым игрокам или если баланс обнулился
+        saveBalance();
+      }
+      updateBalanceUI();
+      document.getElementById('spinBtn').disabled = false;
+      document.getElementById('status').innerText = 'Выберите ставку и крутите!';
+    }
+
+    // 3. Логика рулетки
+    const numbers = [
+      0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10,
+      5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26
+    ];
+    const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+
+    let selectedBet = 'red';
+    let isSpinning = false;
+    let currentAngle = 0;
+
+    const canvas = document.getElementById('wheelCanvas');
+    const ctx = canvas.getContext('2d');
+    const totalSlices = numbers.length;
+    const sliceAngle = (2 * Math.PI) / totalSlices;
+
+    function drawWheel(angleOffset) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const centerX = canvas.width / 2;
+      const centerY = canvas.height / 2;
+      const radius = centerX - 10;
+
+      for (let i = 0; i < totalSlices; i++) {
+        const angle = angleOffset + (i * sliceAngle);
+        const num = numbers[i];
+
+        let sliceColor = '#1f1f1f';
+        if (num === 0) sliceColor = '#147a32';
+        else if (redNumbers.includes(num)) sliceColor = '#ba1616';
+
+        ctx.beginPath();
+        ctx.fillStyle = sliceColor;
+        ctx.moveTo(centerX, centerY);
+        ctx.arc(centerX, centerY, radius, angle, angle + sliceAngle);
+        ctx.lineTo(centerX, centerY);
+        ctx.fill();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = '#333';
+        ctx.stroke();
+
+        ctx.save();
+        ctx.translate(centerX, centerY);
+        ctx.rotate(angle + sliceAngle / 2);
+        ctx.textAlign = 'right';
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 22px sans-serif';
+        ctx.fillText(num.toString(), radius - 20, 8);
+        ctx.restore();
+      }
+
+      ctx.beginPath();
+      ctx.arc(centerX, centerY, 50, 0, 2 * Math.PI);
+      ctx.fillStyle = '#222823';
+      ctx.fill();
+      ctx.lineWidth = 4;
+      ctx.strokeStyle = '#ffd700';
+      ctx.stroke();
+    }
+
+    drawWheel(0);
+    loadBalance(); // Загружаем баланс при старте
+
+    function chooseBet(type) {
+      if (isSpinning) return;
+      selectedBet = type;
+      document.getElementById('btnRed').classList.toggle('selected', type === 'red');
+      document.getElementById('btnBlack').classList.toggle('selected', type === 'black');
+      document.getElementById('btnGreen').classList.toggle('selected', type === 'green');
+    }
+
+    function safeHaptic(type) {
+      try {
+        if (tg?.HapticFeedback) {
+          if (type === 'impact') tg.HapticFeedback.impactOccurred('medium');
+          if (type === 'win') tg.HapticFeedback.notificationOccurred('success');
+        }
+      } catch (e) {}
+    }
+
+    function spinWheel() {
+      if (isSpinning) return;
+      if (balance < betAmount) {
+        document.getElementById('status').innerText = '❌ Недостаточно монет!';
         return;
       }
 
-      spinning = true;
-      balance = balance - bet;
-      document.getElementById("balance").innerText = balance;
-      document.getElementById("status").innerText = "Крутим...";
-      document.getElementById("btn").style.opacity = "0.5";
+      balance -= betAmount;
+      saveBalance(); // Сохраняем списание
 
-      var count = 0;
-      var timer = setInterval(function() {
-        document.getElementById("r1").innerText = getRandomItem();
-        document.getElementById("r2").innerText = getRandomItem();
-        document.getElementById("r3").innerText = getRandomItem();
-        count++;
+      isSpinning = true;
+      document.getElementById('spinBtn').disabled = true;
+      document.getElementById('status').innerText = 'Колесо вращается...';
+      safeHaptic('impact');
 
-        if (count > 15) {
-          clearInterval(timer);
+      const fullRotations = (4 + Math.random() * 3) * 2 * Math.PI;
+      const targetAngle = currentAngle + fullRotations;
+      const duration = 4500;
+      const startTime = performance.now();
+      const initialAngle = currentAngle;
 
-          var s1 = getRandomItem();
-          var s2 = getRandomItem();
-          var s3 = getRandomItem();
+      function animate(time) {
+        const elapsed = time - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        currentAngle = initialAngle + (targetAngle - initialAngle) * easeOut;
 
-          document.getElementById("r1").innerText = s1;
-          document.getElementById("r2").innerText = s2;
-          document.getElementById("r3").innerText = s3;
+        drawWheel(currentAngle);
 
-          var win = 0;
-          if (s1 === s2 && s2 === s3) {
-            win = 250;
-            document.getElementById("status").innerText = "🔥 3 в ряд! +" + win;
-          } else if (s1 === s2 || s2 === s3 || s1 === s3) {
-            win = 50;
-            document.getElementById("status").innerText = "🎉 Пара! Возврат ставки +" + win;
-          } else {
-            document.getElementById("status").innerText = "Мимо. Ещё разок!";
-          }
-
-          balance = balance + win;
-          document.getElementById("balance").innerText = balance;
-          spinning = false;
-          document.getElementById("btn").style.opacity = "1";
+        if (progress < 1) {
+          requestAnimationFrame(animate);
+        } else {
+          finishSpin();
         }
-      }, 70);
+      }
+      requestAnimationFrame(animate);
+    }
+
+    function finishSpin() {
+      const pointerAngle = 1.5 * Math.PI;
+      let normalized = (pointerAngle - (currentAngle % (2 * Math.PI))) % (2 * Math.PI);
+      if (normalized < 0) normalized += 2 * Math.PI;
+
+      const winningIndex = Math.floor(normalized / sliceAngle) % totalSlices;
+      const winningNumber = numbers[winningIndex];
+
+      let winningColor = 'black';
+      let colorName = 'Чёрное';
+      if (winningNumber === 0) {
+        winningColor = 'green';
+        colorName = 'Зеро';
+      } else if (redNumbers.includes(winningNumber)) {
+        winningColor = 'red';
+        colorName = 'Красное';
+      }
+
+      let win = 0;
+      if (selectedBet === winningColor) {
+        win = winningColor === 'green' ? betAmount * 14 : betAmount * 2;
+      }
+
+      const statusEl = document.getElementById('status');
+      if (win > 0) {
+        balance += win;
+        statusEl.innerHTML = `🔥 Выпало: <b>${winningNumber} (${colorName})</b>. Победа +${win}!`;
+        safeHaptic('win');
+      } else {
+        statusEl.innerHTML = `Выпало: <b>${winningNumber} (${colorName})</b>. Вы проиграли.`;
+      }
+
+      saveBalance(); // Сохраняем выигрыш
+      isSpinning = false;
+      document.getElementById('spinBtn').disabled = false;
     }
   </script>
 </body>
