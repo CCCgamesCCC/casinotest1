@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Casino Mini App</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -14,7 +13,7 @@
     }
     body {
       margin: 0;
-      padding: 20px;
+      padding: 16px;
       background: #121214;
       color: #ffffff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -24,70 +23,69 @@
       justify-content: center;
       min-height: 100vh;
       text-align: center;
-      touch-action: manipulation;
     }
     .balance-box {
       font-size: 1.4rem;
       font-weight: 700;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
       color: #f5a623;
     }
     .machine {
       background: #1f2024;
       padding: 20px;
-      border-radius: 24px;
-      box-shadow: 0 12px 30px rgba(0,0,0,0.6);
+      border-radius: 20px;
       border: 2px solid #2d3038;
       display: flex;
       gap: 12px;
     }
     .reel {
       width: 75px;
-      height: 95px;
+      height: 90px;
       background: #0d0d0f;
-      border-radius: 14px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 3.2rem;
+      font-size: 3rem;
       border: 1px solid #333;
     }
     .controls {
-      margin-top: 35px;
-      width: 100%;
-      display: flex;
-      justify-content: center;
+      margin-top: 25px;
     }
     .spin-btn {
       background: #e50914;
       color: #ffffff;
       border: none;
-      width: 200px;
-      height: 60px;
+      padding: 18px 50px;
       font-size: 1.3rem;
       font-weight: 800;
-      border-radius: 30px;
+      border-radius: 40px;
       cursor: pointer;
-      box-shadow: 0 6px 20px rgba(229, 9, 20, 0.4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: transform 0.1s;
+      box-shadow: 0 4px 15px rgba(229, 9, 20, 0.4);
     }
     .spin-btn:active {
-      transform: scale(0.95);
+      transform: scale(0.96);
       background: #b80710;
     }
-    .spin-btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
     .result-text {
-      margin-top: 25px;
-      font-size: 1.15rem;
-      min-height: 28px;
+      margin-top: 20px;
+      font-size: 1.1rem;
       font-weight: 600;
-      color: #e0e0e0;
+      min-height: 25px;
+    }
+    /* Панель диагностики на экране */
+    #logBox {
+      margin-top: 25px;
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid #444;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 0.8rem;
+      color: #a0ffa0;
+      max-width: 90%;
+      word-break: break-word;
+      text-align: left;
     }
   </style>
 </head>
@@ -101,24 +99,28 @@
     <div class="reel" id="reel3">7️⃣</div>
   </div>
 
-  <div class="result-text" id="result">Нажмите «КРУТИТЬ»! (Ставка 50)</div>
+  <div class="result-text" id="result">Нажмите кнопку</div>
 
   <div class="controls">
     <button class="spin-btn" id="spinBtn" type="button">КРУТИТЬ</button>
   </div>
 
+  <!-- Окно отладки -->
+  <div id="logBox">Статус: загрузка (Версия 3.0)...</div>
+
   <script>
-    // Инициализация Telegram
-    const tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-    if (tg) {
-      try {
-        tg.ready();
-        tg.expand();
-        if (tg.disableVerticalSwipes) {
-          tg.disableVerticalSwipes(); // Блокируем случайное закрытие окна свайпом
-        }
-      } catch (e) {}
+    const logEl = document.getElementById("logBox");
+    function log(msg) {
+      logEl.innerHTML += "<br>▶ " + msg;
     }
+
+    // Выводим все системные ошибки прямо на экран
+    window.onerror = function(msg, url, line) {
+      log("<span style='color:red'>ОШИБКА: " + msg + " (стр: " + line + ")</span>");
+      return false;
+    };
+
+    log("Скрипт стартовал");
 
     const symbols = ["🍒", "🍋", "🍇", "🔔", "7️⃣"];
     let balance = 1000;
@@ -128,94 +130,77 @@
     const r1 = document.getElementById("reel1");
     const r2 = document.getElementById("reel2");
     const r3 = document.getElementById("reel3");
-    const balanceEl = document.getElementById("balance");
-    const resultEl = document.getElementById("result");
-    const spinBtn = document.getElementById("spinBtn");
+    const balEl = document.getElementById("balance");
+    const resEl = document.getElementById("result");
+    const btn = document.getElementById("spinBtn");
 
     function getRandomSymbol() {
       return symbols[Math.floor(Math.random() * symbols.length)];
     }
 
-    function triggerVibration(type) {
-      try {
-        if (tg && tg.HapticFeedback) {
-          if (type === "spin" && typeof tg.HapticFeedback.impactOccurred === "function") {
-            tg.HapticFeedback.impactOccurred("medium");
-          }
-          if (type === "win" && typeof tg.HapticFeedback.notificationOccurred === "function") {
-            tg.HapticFeedback.notificationOccurred("success");
-          }
-        }
-      } catch (e) {}
-    }
-
     function doSpin() {
-      if (isSpinning) return;
+      log("Нажатие зарегистрировано!");
+
+      if (isSpinning) {
+        log("Уже крутится, ждём...");
+        return;
+      }
 
       if (balance < bet) {
-        resultEl.innerText = "❌ Недостаточно монет!";
+        resEl.innerText = "Недостаточно монет!";
+        log("Баланс слишком мал");
         return;
       }
 
       isSpinning = true;
       balance -= bet;
-      balanceEl.innerText = balance;
-      spinBtn.disabled = true;
-      resultEl.innerText = "Барабаны вращаются...";
+      balEl.innerText = balance;
+      btn.disabled = true;
+      resEl.innerText = "Барабаны крутятся...";
 
-      triggerVibration("spin");
-
-      let counter = 0;
-      const interval = setInterval(() => {
+      let step = 0;
+      const timer = setInterval(() => {
         r1.innerText = getRandomSymbol();
         r2.innerText = getRandomSymbol();
         r3.innerText = getRandomSymbol();
-        counter++;
+        step++;
 
-        if (counter >= 15) {
-          clearInterval(interval);
-          finishSpin();
+        if (step > 12) {
+          clearInterval(timer);
+
+          const s1 = getRandomSymbol();
+          const s2 = getRandomSymbol();
+          const s3 = getRandomSymbol();
+          r1.innerText = s1;
+          r2.innerText = s2;
+          r3.innerText = s3;
+
+          let win = 0;
+          if (s1 === s2 && s2 === s3) {
+            win = 250;
+            resEl.innerText = "🎉 Выигрыш: +" + win;
+          } else if (s1 === s2 || s2 === s3 || s1 === s3) {
+            win = 50;
+            resEl.innerText = "Пара! Возврат: +" + win;
+          } else {
+            resEl.innerText = "Мимо! Попробуйте снова.";
+          }
+
+          balance += win;
+          balEl.innerText = balance;
+          isSpinning = false;
+          btn.disabled = false;
+          log("Спин завершен, баланс: " + balance);
         }
-      }, 70);
+      }, 80);
     }
 
-    function finishSpin() {
-      const s1 = getRandomSymbol();
-      const s2 = getRandomSymbol();
-      const s3 = getRandomSymbol();
-
-      r1.innerText = s1;
-      r2.innerText = s2;
-      r3.innerText = s3;
-
-      let win = 0;
-      if (s1 === "7️⃣" && s2 === "7️⃣" && s3 === "7️⃣") {
-        win = 500;
-        resultEl.innerText = `🔥 ДЖЕКПОТ! +${win} монет!`;
-        triggerVibration("win");
-      } else if (s1 === s2 && s2 === s3) {
-        win = 200;
-        resultEl.innerText = `🎉 3 в ряд! +${win} монет!`;
-        triggerVibration("win");
-      } else if (s1 === s2 || s2 === s3 || s1 === s3) {
-        win = 50;
-        resultEl.innerText = `Пара! Возврат ставки (+${win})`;
-      } else {
-        resultEl.innerText = "Мимо. Попробуйте ещё раз!";
-      }
-
-      balance += win;
-      balanceEl.innerText = balance;
-      isSpinning = false;
-      spinBtn.disabled = false;
-    }
-
-    // Слушаем клик мыши и прямое касание экрана телефона
-    spinBtn.addEventListener("click", doSpin);
-    spinBtn.addEventListener("touchend", (e) => {
-      e.preventDefault(); // Предотвращаем двойной клик на телефоне
+    // Привязываем обработчик
+    btn.onclick = function() {
       doSpin();
-    });
+    };
+
+    log("Кнопка готова к нажатию");
   </script>
 </body>
 </html>
