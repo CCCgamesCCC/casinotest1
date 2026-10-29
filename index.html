@@ -3,322 +3,368 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Рулетка Telegram</title>
+  <title>Telegram Roulette Pro</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
+    :root {
+      --gold: #f5c842;
+      --gold-dark: #b8911b;
+      --felt-green: #0d2818;
+      --felt-border: #1e4b2d;
+      --red: #c91818;
+      --black: #1a1a1a;
+      --green: #117733;
+    }
     * {
       box-sizing: border-box;
       user-select: none;
       -webkit-user-select: none;
       -webkit-tap-highlight-color: transparent;
+      margin: 0;
+      padding: 0;
     }
     body {
-      margin: 0;
-      padding: 10px 10px 30px;
-      background: #0b130e;
-      color: #ffffff;
+      background: radial-gradient(circle at 50% 20%, #152219 0%, #080d0a 100%);
+      color: #fff;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
-      min-height: 100vh;
-      text-align: center;
+      padding: 10px 8px 30px;
       overflow-x: hidden;
     }
-    .balance-card {
-      background: #14241b;
-      border: 1px solid #274735;
-      padding: 8px 20px;
-      border-radius: 20px;
-      margin-bottom: 6px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+
+    /* Верхняя панель */
+    .top-bar {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: rgba(18, 38, 26, 0.85);
+      border: 1px solid var(--felt-border);
+      border-radius: 14px;
+      margin-bottom: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
     }
-    .balance-val {
-      font-size: 1.3rem;
-      font-weight: 800;
-      color: #ffd700;
-    }
-    .wheel-container {
-      position: relative;
-      width: 240px;
-      height: 240px;
-      margin: 0 auto;
-    }
-    canvas {
-      width: 240px;
-      height: 240px;
-      border-radius: 50%;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.8), 0 0 0 5px #1e3629;
-    }
-    .pointer {
-      position: absolute;
-      top: -7px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 0;
-      height: 0;
-      border-left: 10px solid transparent;
-      border-right: 10px solid transparent;
-      border-top: 18px solid #ffd700;
-      z-index: 10;
-      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
-    }
-    .status-box {
-      margin-top: 8px;
-      font-size: 0.95rem;
-      font-weight: 600;
-      min-height: 24px;
-      color: #eaeaea;
-    }
-    .current-bet-badge {
-      display: inline-block;
-      margin-top: 4px;
-      padding: 4px 12px;
-      background: #1c2b22;
-      border-radius: 12px;
+    .balance-box {
       font-size: 0.85rem;
-      color: #ffd700;
-      border: 1px solid #2f4b3a;
+      color: #c4decb;
+    }
+    .balance-amount {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: var(--gold);
     }
 
-    /* Блок ввода ставки */
-    .bet-control-box {
-      background: #132118;
-      border: 1px solid #284433;
-      border-radius: 14px;
-      padding: 8px 12px;
-      margin-top: 10px;
-      width: 100%;
-      max-width: 360px;
+    /* Лента истории */
+    .history-container {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 0.75rem;
+      color: #8da394;
     }
-    .bet-input-row {
+    .history-strip {
+      display: flex;
+      gap: 4px;
+    }
+    .history-badge {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
-    }
-    .bet-input-label {
-      font-size: 0.85rem;
-      color: #a4beae;
-      font-weight: 600;
-    }
-    .bet-input {
-      width: 100px;
-      height: 36px;
-      background: #09100b;
-      border: 2px solid #3c654d;
-      border-radius: 8px;
-      color: #ffd700;
-      font-size: 1.1rem;
       font-weight: 800;
-      text-align: center;
-      outline: none;
-      user-select: text;
-      -webkit-user-select: text;
+      font-size: 0.7rem;
+      color: #fff;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
     }
-    .bet-input:focus {
-      border-color: #ffd700;
+    .badge-red { background: var(--red); }
+    .badge-black { background: var(--black); border: 1px solid #444; }
+    .badge-green { background: var(--green); }
+
+    /* Колесо и шарик */
+    .wheel-wrap {
+      position: relative;
+      width: 250px;
+      height: 250px;
+      margin: 4px auto 8px;
     }
-    .quick-chips-row {
-      display: flex;
-      gap: 5px;
-      justify-content: center;
-      margin-top: 8px;
-    }
-    .quick-chip {
-      background: #1d3326;
-      border: 1px solid #386047;
-      color: #e0f0e6;
-      padding: 5px 8px;
-      border-radius: 8px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .quick-chip:active {
-      transform: scale(0.95);
-      background: #2a4c38;
+    canvas#wheelCanvas {
+      width: 250px;
+      height: 250px;
+      border-radius: 50%;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.9), 0 0 0 6px #24382c, 0 0 0 8px var(--gold-dark);
     }
 
-    /* Вкладки */
-    .tab-nav {
+    /* Таймер и уведомления */
+    .timer-banner {
+      width: 100%;
+      max-width: 420px;
+      min-height: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #ffd859;
+      margin-bottom: 6px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+    .timer-badge {
+      display: inline-block;
+      background: #b52222;
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 10px;
+      margin-left: 6px;
+      font-size: 0.85rem;
+      animation: pulse 1s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    /* Селектор фишек */
+    .chip-selector-box {
+      width: 100%;
+      max-width: 420px;
+      display: flex;
+      justify-content: center;
+      gap: 7px;
+      margin-bottom: 10px;
+    }
+    .denom-chip {
+      width: 42px;
+      height: 42px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+      cursor: pointer;
+      color: #fff;
+      border: 2px dashed rgba(255,255,255,0.6);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.6);
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .denom-chip.active {
+      transform: translateY(-4px) scale(1.12);
+      border: 3px solid #fff !important;
+      box-shadow: 0 0 14px var(--gold);
+    }
+    .chip-10 { background: #1c52b0; }
+    .chip-50 { background: #b01c1c; }
+    .chip-100 { background: #198038; }
+    .chip-500 { background: #6929c4; }
+    .chip-1000 { background: #b28600; color: #111; border-color: #333; }
+
+    /* Стол рулетки */
+    .roulette-table {
+      width: 100%;
+      max-width: 420px;
+      background: var(--felt-green);
+      border: 2px solid var(--felt-border);
+      border-radius: 12px;
+      padding: 6px;
+      box-shadow: inset 0 0 20px rgba(0,0,0,0.6), 0 6px 20px rgba(0,0,0,0.5);
+    }
+
+    .bet-cell {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: filter 0.1s;
+    }
+    .bet-cell:active {
+      filter: brightness(1.3);
+    }
+
+    /* Наклейка фишки на ставке */
+    .table-chip-badge {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #ffd700;
+      color: #111;
+      font-size: 0.65rem;
+      font-weight: 900;
+      padding: 1px 4px;
+      border-radius: 8px;
+      border: 1px solid #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.8);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Номера */
+    .zero-cell {
+      background: var(--green);
+      height: 32px;
+      margin-bottom: 4px;
+      font-size: 0.9rem;
+      border: 1px solid #1c9444;
+    }
+    .grid-36 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 3px;
+      margin-bottom: 5px;
+    }
+    .grid-36 .bet-cell {
+      height: 34px;
+      font-size: 0.95rem;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+    .c-red { background: var(--red); }
+    .c-black { background: var(--black); }
+
+    /* Дюжины */
+    .dozens-row, .outside-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 4px;
+      margin-bottom: 4px;
+    }
+    .dozens-row .bet-cell, .outside-row .bet-cell {
+      background: #153823;
+      border: 1px solid #275739;
+      height: 32px;
+      font-size: 0.75rem;
+    }
+
+    .outside-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 3px;
+    }
+    .outside-grid .bet-cell {
+      height: 32px;
+      font-size: 0.75rem;
+      border: 1px solid #275739;
+    }
+    .bg-red-sector { background: #871313; }
+    .bg-black-sector { background: #212121; }
+    .bg-green-sector { background: #134426; }
+
+    /* Панель управления */
+    .control-actions {
+      width: 100%;
+      max-width: 420px;
       display: flex;
       gap: 6px;
       margin-top: 10px;
-      margin-bottom: 6px;
     }
-    .tab-btn {
-      background: #18261e;
-      border: 1px solid #2d4536;
-      color: #a0b8a8;
-      padding: 6px 14px;
-      border-radius: 14px;
-      font-size: 0.8rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
-    .tab-btn.active {
-      background: #254d35;
-      color: #ffffff;
-      border-color: #ffd700;
-    }
-
-    .bet-panel {
-      width: 100%;
-      max-width: 360px;
-    }
-    .tab-content {
-      display: none;
-    }
-    .tab-content.active {
-      display: block;
-    }
-
-    /* Кнопки секторов и цветов */
-    .bet-grid-row {
-      display: flex;
-      gap: 5px;
-      justify-content: center;
-      margin-bottom: 5px;
-    }
-    .chip-btn {
+    .act-btn {
       flex: 1;
-      padding: 7px 4px;
-      font-size: 0.75rem;
-      font-weight: 700;
-      border: 2px solid transparent;
-      border-radius: 8px;
+      height: 42px;
+      border-radius: 10px;
+      border: none;
+      font-weight: 800;
+      font-size: 0.8rem;
       cursor: pointer;
-      color: #fff;
-    }
-    .chip-btn:active {
-      transform: scale(0.96);
-    }
-    .c-red { background: #b81414; }
-    .c-black { background: #1c1c1c; border: 1px solid #3d3d3d; }
-    .c-green { background: #187a38; }
-    .c-sector { background: #223c2d; border: 1px solid #335942; }
-
-    .chip-btn.selected {
-      border-color: #ffd700 !important;
-      box-shadow: 0 0 10px rgba(255, 215, 0, 0.75);
-      transform: scale(1.02);
-    }
-
-    /* Сетка чисел */
-    .numbers-board {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 4px;
-      margin-top: 4px;
-    }
-    .num-btn {
-      aspect-ratio: 1.2;
-      border: 2px solid transparent;
-      border-radius: 7px;
-      font-size: 0.85rem;
-      font-weight: bold;
       color: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
-      cursor: pointer;
+      background: #254432;
+      border: 1px solid #3c6b50;
+      transition: transform 0.1s, opacity 0.2s;
     }
-    .num-zero {
-      grid-column: span 6;
-      background: #187a38;
-      aspect-ratio: auto;
-      padding: 6px 0;
+    .act-btn:active {
+      transform: scale(0.96);
     }
-
-    .controls {
-      margin-top: 10px;
-    }
-    .spin-btn {
-      background: linear-gradient(180deg, #ffd700 0%, #d4af37 100%);
+    .act-spin {
+      flex: 2;
+      background: linear-gradient(180deg, var(--gold) 0%, var(--gold-dark) 100%);
       color: #111;
       border: none;
-      width: 220px;
-      height: 48px;
-      font-size: 1.2rem;
-      font-weight: 800;
-      border-radius: 24px;
-      cursor: pointer;
-      box-shadow: 0 6px 18px rgba(212, 175, 55, 0.4);
+      font-size: 1rem;
+      box-shadow: 0 4px 15px rgba(245, 200, 66, 0.4);
     }
-    .spin-btn:disabled {
+    .act-btn:disabled {
       opacity: 0.4;
       cursor: not-allowed;
+      transform: none !important;
     }
   </style>
 </head>
 <body>
 
-  <div class="balance-card">
-    Баланс: <span class="balance-val" id="balance">...</span> 🪙
-  </div>
-
-  <div class="wheel-container">
-    <div class="pointer"></div>
-    <canvas id="wheelCanvas" width="480" height="480"></canvas>
-  </div>
-
-  <div class="status-box" id="status">Загрузка...</div>
-  <div class="current-bet-badge" id="betBadge">Ставка: 50 на КРАСНОЕ (x2)</div>
-
-  <!-- Блок настройки суммы ставки -->
-  <div class="bet-control-box">
-    <div class="bet-input-row">
-      <span class="bet-input-label">Размер ставки:</span>
-      <input type="number" id="betInput" class="bet-input" value="50" min="10" step="10">
-      <span style="color:#ffd700; font-weight:bold;">🪙</span>
+  <!-- Верхняя панель: Баланс и История -->
+  <div class="top-bar">
+    <div class="balance-box">
+      Баланс: <span class="balance-amount" id="balanceVal">...</span> 🪙
     </div>
-    <div class="quick-chips-row">
-      <button class="quick-chip" onclick="adjustBet('min')">MIN (10)</button>
-      <button class="quick-chip" onclick="adjustBet('+50')">+50</button>
-      <button class="quick-chip" onclick="adjustBet('+100')">+100</button>
-      <button class="quick-chip" onclick="adjustBet('+500')">+500</button>
-      <button class="quick-chip" onclick="adjustBet('x2')">x2</button>
-      <button class="quick-chip" onclick="adjustBet('all')">ALL IN</button>
+    <div class="history-container">
+      <span>ИСТОРИЯ:</span>
+      <div class="history-strip" id="historyStrip"></div>
     </div>
   </div>
 
-  <!-- Вкладки -->
-  <div class="tab-nav">
-    <button class="tab-btn active" onclick="switchTab('sectors')">Секторы и цвета</button>
-    <button class="tab-btn" onclick="switchTab('numbers')">Точные числа (x36)</button>
+  <!-- Колесо со встроенной анимацией шарика -->
+  <div class="wheel-wrap">
+    <canvas id="wheelCanvas" width="500" height="500"></canvas>
   </div>
 
-  <div class="bet-panel">
-    <!-- Вкладка 1: Секторы и цвета -->
-    <div class="tab-content active" id="tab-sectors">
-      <div class="bet-grid-row">
-        <button class="chip-btn c-red selected" id="b-red" onclick="setBet('red', 'КРАСНОЕ', 2, this)">КРАСНОЕ (x2)</button>
-        <button class="chip-btn c-black" id="b-black" onclick="setBet('black', 'ЧЁРНОЕ', 2, this)">ЧЁРНОЕ (x2)</button>
-      </div>
+  <!-- Статус / Таймер обратного отсчёта -->
+  <div class="timer-banner" id="statusBanner">
+    Сделайте ставку на сукне стола
+  </div>
 
-      <div class="bet-grid-row">
-        <button class="chip-btn c-sector" onclick="setBet('even', 'ЧЁТНОЕ', 2, this)">ЧЁТ (x2)</button>
-        <button class="chip-btn c-sector" onclick="setBet('odd', 'НЕЧЁТНОЕ', 2, this)">НЕЧ (x2)</button>
-        <button class="chip-btn c-sector" onclick="setBet('low', '1 - 18', 2, this)">1-18 (x2)</button>
-        <button class="chip-btn c-sector" onclick="setBet('high', '19 - 36', 2, this)">19-36 (x2)</button>
-      </div>
+  <!-- Выбор номинала текущей фишки -->
+  <div class="chip-selector-box" id="chipSelector">
+    <div class="denom-chip chip-10 active" onclick="selectChip(10, this)">10</div>
+    <div class="denom-chip chip-50" onclick="selectChip(50, this)">50</div>
+    <div class="denom-chip chip-100" onclick="selectChip(100, this)">100</div>
+    <div class="denom-chip chip-500" onclick="selectChip(500, this)">500</div>
+    <div class="denom-chip chip-1000" onclick="selectChip(1000, this)">1k</div>
+  </div>
 
-      <div class="bet-grid-row">
-        <button class="chip-btn c-sector" onclick="setBet('doz1', '1-я ДЮЖИНА (1-12)', 3, this)">1-12 (x3)</button>
-        <button class="chip-btn c-sector" onclick="setBet('doz2', '2-я ДЮЖИНА (13-24)', 3, this)">13-24 (x3)</button>
-        <button class="chip-btn c-sector" onclick="setBet('doz3', '3-я ДЮЖИНА (25-36)', 3, this)">25-36 (x3)</button>
-      </div>
+  <!-- Игровой стол ставок -->
+  <div class="roulette-table">
+    <!-- Зеро (0) -->
+    <div class="bet-cell zero-cell" data-target="0" onclick="placeBet('number', '0', 36, this)">
+      0 Зеро (x36)
     </div>
 
-    <!-- Вкладка 2: Точные числа -->
-    <div class="tab-content" id="tab-numbers">
-      <div class="numbers-board" id="numbersGrid"></div>
+    <!-- Числа 1..36 (3 колонки как в настоящей рулетке) -->
+    <div class="grid-36" id="numbersTable"></div>
+
+    <!-- Дюжины -->
+    <div class="dozens-row">
+      <div class="bet-cell bg-green-sector" onclick="placeBet('doz1', '1-я Дюж', 3, this)">1 - 12 (x3)</div>
+      <div class="bet-cell bg-green-sector" onclick="placeBet('doz2', '2-я Дюж', 3, this)">13 - 24 (x3)</div>
+      <div class="bet-cell bg-green-sector" onclick="placeBet('doz3', '3-я Дюж', 3, this)">25 - 36 (x3)</div>
+    </div>
+
+    <!-- Равные шансы (1-18, ЧЕТ, КРАСНОЕ, ЧЕРНОЕ, НЕЧЕТ, 19-36) -->
+    <div class="outside-grid">
+      <div class="bet-cell bg-green-sector" onclick="placeBet('low', '1-18', 2, this)">1-18</div>
+      <div class="bet-cell bg-green-sector" onclick="placeBet('even', 'ЧЁТ', 2, this)">ЧЁТ</div>
+      <div class="bet-cell bg-red-sector" onclick="placeBet('red', 'КРАСН', 2, this)">КРАСН</div>
+      <div class="bet-cell bg-black-sector" onclick="placeBet('black', 'ЧЁРН', 2, this)">ЧЁРН</div>
+      <div class="bet-cell bg-green-sector" onclick="placeBet('odd', 'НЕЧ', 2, this)">НЕЧ</div>
+      <div class="bet-cell bg-green-sector" onclick="placeBet('high', '19-36', 2, this)">19-36</div>
     </div>
   </div>
 
-  <div class="controls">
-    <button class="spin-btn" id="spinBtn" onclick="spinWheel()" disabled>КРУТИТЬ</button>
+  <!-- Кнопки управления -->
+  <div class="control-actions">
+    <button class="act-btn" id="btnClear" onclick="clearAllBets()">ОЧИСТИТЬ</button>
+    <button class="act-btn" id="btnDouble" onclick="doubleAllBets()">x2 СТАВКИ</button>
+    <button class="act-btn act-spin" id="btnSpin" onclick="triggerImmediateSpin()" disabled>КРУТИТЬ</button>
   </div>
 
   <script>
@@ -332,26 +378,44 @@
       } catch (e) {}
     }
 
-    // 2. Баланс и хранилище
+    function safeHaptic(type) {
+      try {
+        if (tg?.HapticFeedback) {
+          if (type === 'tap') tg.HapticFeedback.impactOccurred('light');
+          if (type === 'spin') tg.HapticFeedback.impactOccurred('medium');
+          if (type === 'win') tg.HapticFeedback.notificationOccurred('success');
+          if (type === 'lose') tg.HapticFeedback.notificationOccurred('warning');
+        }
+      } catch (e) {}
+    }
+
+    // 2. Европейская рулетка: последовательность и цвета
+    const wheelOrder = [
+      0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10,
+      5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26
+    ];
+    const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+
+    // 3. Состояние игрока и ставок
     let balance = 1000;
-    const STORAGE_KEY = "roulette_player_balance";
-    const betInput = document.getElementById("betInput");
+    const STORAGE_KEY = "roulette_multi_balance";
+    let selectedChipValue = 10;
+    let placedBets = {}; // ключ -> { type, target, mult, amount, element }
+    let isSpinning = false;
+    let countdownTimer = null;
+    let secondsLeft = 10;
+    let gameHistory = [15, 22, 0, 7];
 
     function updateBalanceUI() {
-      document.getElementById('balance').innerText = balance;
+      document.getElementById('balanceVal').innerText = balance;
     }
 
     function saveBalance() {
       updateBalanceUI();
-      try {
-        localStorage.setItem(STORAGE_KEY, balance.toString());
-      } catch (e) {}
-
+      try { localStorage.setItem(STORAGE_KEY, balance.toString()); } catch (e) {}
       try {
         if (tg?.CloudStorage?.setItem) {
-          tg.CloudStorage.setItem(STORAGE_KEY, balance.toString(), (err) => {
-            if (err) console.error("CloudStorage error", err);
-          });
+          tg.CloudStorage.setItem(STORAGE_KEY, balance.toString(), () => {});
         }
       } catch (e) {}
     }
@@ -359,300 +423,428 @@
     function loadBalance() {
       if (tg?.CloudStorage?.getItem) {
         tg.CloudStorage.getItem(STORAGE_KEY, (err, val) => {
-          if (!err && val) {
-            balance = parseInt(val, 10);
-          } else {
-            const local = localStorage.getItem(STORAGE_KEY);
-            if (local) balance = parseInt(local, 10);
+          if (!err && val) balance = parseInt(val, 10);
+          else {
+            const loc = localStorage.getItem(STORAGE_KEY);
+            if (loc) balance = parseInt(loc, 10);
           }
-          finishInit();
+          initApp();
         });
       } else {
-        const local = localStorage.getItem(STORAGE_KEY);
-        if (local) balance = parseInt(local, 10);
-        finishInit();
+        const loc = localStorage.getItem(STORAGE_KEY);
+        if (loc) balance = parseInt(loc, 10);
+        initApp();
       }
     }
 
-    function finishInit() {
+    function initApp() {
       if (isNaN(balance) || balance < 10) {
         balance = 1000;
         saveBalance();
       }
       updateBalanceUI();
-      document.getElementById('spinBtn').disabled = false;
-      document.getElementById('status').innerText = 'Укажите ставку и крутите!';
-      updateBetBadge();
+      renderHistory();
+      renderNumbersGrid();
+      drawRoulette(0, null);
     }
 
-    // 3. Управление ставкой
-    function getBetAmount() {
-      let val = parseInt(betInput.value, 10);
-      if (isNaN(val) || val < 10) val = 10;
-      return val;
-    }
-
-    function updateBetBadge() {
-      const amt = getBetAmount();
-      document.getElementById('betBadge').innerText = `Ставка: ${amt} на ${currentBet.name} (x${currentBet.multiplier})`;
-    }
-
-    betInput.addEventListener('input', () => {
-      let val = parseInt(betInput.value, 10);
-      if (val > balance) betInput.value = balance;
-      updateBetBadge();
-    });
-
-    function adjustBet(action) {
-      if (isSpinning) return;
-      let cur = getBetAmount();
-
-      if (action === 'min') cur = 10;
-      else if (action === '+50') cur += 50;
-      else if (action === '+100') cur += 100;
-      else if (action === '+500') cur += 500;
-      else if (action === 'x2') cur *= 2;
-      else if (action === 'all') cur = balance;
-
-      if (cur > balance) cur = balance;
-      if (cur < 10) cur = 10;
-
-      betInput.value = cur;
-      updateBetBadge();
-    }
-
-    // 4. Данные рулетки
-    const numbers = [
-      0, 32, 15, 19, 4, 21, 2, 25, 17, 34, 6, 27, 13, 36, 11, 30, 8, 23, 10,
-      5, 24, 16, 33, 1, 20, 14, 31, 9, 22, 18, 29, 7, 28, 12, 35, 3, 26
-    ];
-    const redNumbers = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
-
-    let currentBet = {
-      type: 'red',
-      name: 'КРАСНОЕ',
-      multiplier: 2,
-      value: null
-    };
-
-    let isSpinning = false;
-    let currentAngle = 0;
-
-    // Сетка чисел
-    const gridEl = document.getElementById('numbersGrid');
-    const zeroBtn = document.createElement('button');
-    zeroBtn.className = 'num-btn num-zero';
-    zeroBtn.innerText = '0 (Зеро) — x36';
-    zeroBtn.onclick = function() { setNumberBet(0, this); };
-    gridEl.appendChild(zeroBtn);
-
-    for (let i = 1; i <= 36; i++) {
-      const btn = document.createElement('button');
-      const isRed = redNumbers.includes(i);
-      btn.className = `num-btn ${isRed ? 'c-red' : 'c-black'}`;
-      btn.innerText = i;
-      btn.onclick = function() { setNumberBet(i, this); };
-      gridEl.appendChild(btn);
-    }
-
-    function switchTab(tab) {
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-
-      if (tab === 'sectors') {
-        event.target.classList.add('active');
-        document.getElementById('tab-sectors').classList.add('active');
-      } else {
-        event.target.classList.add('active');
-        document.getElementById('tab-numbers').classList.add('active');
+    // 4. Отрисовка сетки чисел (1..36)
+    function renderNumbersGrid() {
+      const container = document.getElementById('numbersTable');
+      container.innerHTML = '';
+      for (let i = 1; i <= 36; i++) {
+        const isRed = redNumbers.includes(i);
+        const cell = document.createElement('div');
+        cell.className = `bet-cell ${isRed ? 'c-red' : 'c-black'}`;
+        cell.innerText = i;
+        cell.onclick = function() { placeBet('number', i.toString(), 36, this); };
+        container.appendChild(cell);
       }
     }
 
-    function clearSelectedStyles() {
-      document.querySelectorAll('.chip-btn, .num-btn').forEach(b => b.classList.remove('selected'));
+    // 5. Отрисовка истории
+    function renderHistory() {
+      const strip = document.getElementById('historyStrip');
+      strip.innerHTML = '';
+      const recent = gameHistory.slice(-6).reverse();
+      recent.forEach(num => {
+        const badge = document.createElement('div');
+        let bg = 'badge-black';
+        if (num === 0) bg = 'badge-green';
+        else if (redNumbers.includes(num)) bg = 'badge-red';
+        badge.className = `history-badge ${bg}`;
+        badge.innerText = num;
+        strip.appendChild(badge);
+      });
     }
 
-    function setBet(type, name, multiplier, el) {
+    // 6. Выбор фишки
+    function selectChip(val, el) {
       if (isSpinning) return;
-      clearSelectedStyles();
-      el.classList.add('selected');
-      currentBet = { type, name, multiplier, value: null };
-      updateBetBadge();
+      selectedChipValue = val;
+      document.querySelectorAll('.denom-chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      safeHaptic('tap');
     }
 
-    function setNumberBet(num, el) {
+    // 7. Система ставок
+    function getTotalBetAmount() {
+      return Object.values(placedBets).reduce((sum, b) => sum + b.amount, 0);
+    }
+
+    function placeBet(type, target, mult, el) {
       if (isSpinning) return;
-      clearSelectedStyles();
-      el.classList.add('selected');
-      currentBet = { type: 'number', name: `ЧИСЛО ${num}`, multiplier: 36, value: num };
-      updateBetBadge();
+
+      if (balance < selectedChipValue) {
+        showTemporaryStatus('❌ Недостаточно баланса для этой фишки!');
+        return;
+      }
+
+      const key = `${type}_${target}`;
+      balance -= selectedChipValue;
+      saveBalance();
+
+      if (!placedBets[key]) {
+        placedBets[key] = {
+          type,
+          target,
+          mult,
+          amount: selectedChipValue,
+          element: el
+        };
+      } else {
+        placedBets[key].amount += selectedChipValue;
+      }
+
+      updateChipBadgeOnCell(placedBets[key]);
+      safeHaptic('tap');
+      enableBetControls(true);
+
+      // Запуск таймера, если это первая ставка
+      if (!countdownTimer) {
+        startCountdown();
+      }
     }
 
-    // 5. Отрисовка колеса
+    function updateChipBadgeOnCell(betObj) {
+      let badge = betObj.element.querySelector('.table-chip-badge');
+      if (!badge) {
+        badge = document.createElement('div');
+        badge.className = 'table-chip-badge';
+        betObj.element.appendChild(badge);
+      }
+      badge.innerText = betObj.amount >= 1000 ? (betObj.amount/1000).toFixed(1) + 'k' : betObj.amount;
+    }
+
+    function clearAllBets() {
+      if (isSpinning) return;
+      const total = getTotalBetAmount();
+      if (total === 0) return;
+
+      balance += total;
+      saveBalance();
+      resetBetsVisual();
+      stopCountdown();
+      showStatus('Сделайте ставку на сукне стола');
+    }
+
+    function doubleAllBets() {
+      if (isSpinning) return;
+      const total = getTotalBetAmount();
+      if (total === 0) return;
+      if (balance < total) {
+        showTemporaryStatus('❌ Недостаточно средств для удвоения!');
+        return;
+      }
+
+      balance -= total;
+      saveBalance();
+
+      for (let k in placedBets) {
+        placedBets[k].amount *= 2;
+        updateChipBadgeOnCell(placedBets[k]);
+      }
+      safeHaptic('tap');
+    }
+
+    function resetBetsVisual() {
+      document.querySelectorAll('.table-chip-badge').forEach(b => b.remove());
+      placedBets = {};
+      enableBetControls(false);
+    }
+
+    function enableBetControls(active) {
+      document.getElementById('btnSpin').disabled = !active;
+    }
+
+    // 8. Таймер обратного отсчёта
+    function startCountdown() {
+      secondsLeft = 10;
+      updateCountdownBanner();
+      countdownTimer = setInterval(() => {
+        secondsLeft--;
+        if (secondsLeft <= 0) {
+          stopCountdown();
+          startSpinProcess();
+        } else {
+          updateCountdownBanner();
+        }
+      }, 1000);
+    }
+
+    function stopCountdown() {
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+      }
+    }
+
+    function updateCountdownBanner() {
+      const banner = document.getElementById('statusBanner');
+      const total = getTotalBetAmount();
+      banner.innerHTML = `Ставки сделаны (${total} 🪙). Спин через: <span class="timer-badge">${secondsLeft}с</span>`;
+    }
+
+    function showStatus(msg) {
+      document.getElementById('statusBanner').innerHTML = msg;
+    }
+
+    function showTemporaryStatus(msg) {
+      const banner = document.getElementById('statusBanner');
+      const old = banner.innerHTML;
+      banner.innerHTML = msg;
+      setTimeout(() => {
+        if (!isSpinning && countdownTimer) updateCountdownBanner();
+        else if (!isSpinning) banner.innerHTML = old;
+      }, 1800);
+    }
+
+    function triggerImmediateSpin() {
+      if (isSpinning || getTotalBetAmount() === 0) return;
+      stopCountdown();
+      startSpinProcess();
+    }
+
+    // 9. Отрисовка колеса и шарика
     const canvas = document.getElementById('wheelCanvas');
     const ctx = canvas.getContext('2d');
-    const totalSlices = numbers.length;
+    const totalSlices = wheelOrder.length;
     const sliceAngle = (2 * Math.PI) / totalSlices;
 
-    function drawWheel(angleOffset) {
+    function drawRoulette(wheelAngle, ballPos) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      const centerX = canvas.width / 2;
-      const centerY = canvas.height / 2;
-      const radius = centerX - 8;
+      const cx = canvas.width / 2;
+      const cy = canvas.height / 2;
+      const outerR = cx - 12;
 
+      // 1. Внешняя золотая дорожка для шарика
+      ctx.beginPath();
+      ctx.arc(cx, cy, outerR + 6, 0, 2 * Math.PI);
+      ctx.fillStyle = '#1e2d24';
+      ctx.fill();
+      ctx.lineWidth = 10;
+      ctx.strokeStyle = '#cda235';
+      ctx.stroke();
+
+      // 2. Секторы колеса
       for (let i = 0; i < totalSlices; i++) {
-        const angle = angleOffset + (i * sliceAngle);
-        const num = numbers[i];
-
-        let sliceColor = '#1a1a1a';
-        if (num === 0) sliceColor = '#187a38';
-        else if (redNumbers.includes(num)) sliceColor = '#ba1616';
+        const start = wheelAngle + i * sliceAngle;
+        const num = wheelOrder[i];
 
         ctx.beginPath();
-        ctx.fillStyle = sliceColor;
-        ctx.moveTo(centerX, centerY);
-        ctx.arc(centerX, centerY, radius, angle, angle + sliceAngle);
-        ctx.lineTo(centerX, centerY);
+        ctx.moveTo(cx, cy);
+        ctx.arc(cx, cy, outerR, start, start + sliceAngle);
+        ctx.lineTo(cx, cy);
+
+        if (num === 0) ctx.fillStyle = '#117733';
+        else if (redNumbers.includes(num)) ctx.fillStyle = '#b31515';
+        else ctx.fillStyle = '#1c1c1c';
+
         ctx.fill();
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 1.2;
         ctx.strokeStyle = '#2b2b2b';
         ctx.stroke();
 
+        // Номера
         ctx.save();
-        ctx.translate(centerX, centerY);
-        ctx.rotate(angle + sliceAngle / 2);
+        ctx.translate(cx, cy);
+        ctx.rotate(start + sliceAngle / 2);
         ctx.textAlign = 'right';
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 18px sans-serif';
-        ctx.fillText(num.toString(), radius - 14, 6);
+        ctx.font = 'bold 17px -apple-system, sans-serif';
+        ctx.fillText(num.toString(), outerR - 16, 6);
         ctx.restore();
       }
 
+      // 3. Центральная часть рулетки (башенка)
+      const grad = ctx.createRadialGradient(cx, cy, 10, cx, cy, 46);
+      grad.addColorStop(0, '#ffe885');
+      grad.addColorStop(0.5, '#ab8316');
+      grad.addColorStop(1, '#1b1b1b');
+
       ctx.beginPath();
-      ctx.arc(centerX, centerY, 38, 0, 2 * Math.PI);
-      ctx.fillStyle = '#1c221e';
+      ctx.arc(cx, cy, 46, 0, 2 * Math.PI);
+      ctx.fillStyle = grad;
       ctx.fill();
-      ctx.lineWidth = 4;
-      ctx.strokeStyle = '#ffd700';
+      ctx.lineWidth = 3;
+      ctx.strokeStyle = '#222';
       ctx.stroke();
+
+      // 4. Отрисовка белого шарика
+      if (ballPos) {
+        const bx = cx + Math.cos(ballPos.angle) * ballPos.radius;
+        const by = cy + Math.sin(ballPos.angle) * ballPos.radius;
+
+        // Тень от шарика
+        ctx.beginPath();
+        ctx.arc(bx + 3, by + 3, 7, 0, 2 * Math.PI);
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.fill();
+
+        // Сам шарик с бликом
+        const bGrad = ctx.createRadialGradient(bx - 2, by - 2, 1, bx, by, 7);
+        bGrad.addColorStop(0, '#ffffff');
+        bGrad.addColorStop(0.7, '#e4e4e4');
+        bGrad.addColorStop(1, '#9c9c9c');
+
+        ctx.beginPath();
+        ctx.arc(bx, by, 7, 0, 2 * Math.PI);
+        ctx.fillStyle = bGrad;
+        ctx.fill();
+        ctx.lineWidth = 0.5;
+        ctx.strokeStyle = '#aaa';
+        ctx.stroke();
+      }
     }
 
-    drawWheel(0);
-    loadBalance();
+    // 10. Анимация прокрутки: колесо крутится по часовой, шарик — против
+    let currentWheelAngle = 0;
 
-    function safeHaptic(type) {
-      try {
-        if (tg?.HapticFeedback) {
-          if (type === 'impact') tg.HapticFeedback.impactOccurred('medium');
-          if (type === 'win') tg.HapticFeedback.notificationOccurred('success');
-        }
-      } catch (e) {}
-    }
-
-    // 6. Вращение
-    function spinWheel() {
-      if (isSpinning) return;
-      const bet = getBetAmount();
-
-      if (bet > balance) {
-        document.getElementById('status').innerText = '❌ Ставка больше вашего баланса!';
-        return;
-      }
-      if (bet < 10) {
-        document.getElementById('status').innerText = '❌ Минимальная ставка — 10 монет!';
-        return;
-      }
-
-      balance -= bet;
-      saveBalance();
-
+    function startSpinProcess() {
       isSpinning = true;
-      document.getElementById('spinBtn').disabled = true;
-      betInput.disabled = true;
-      document.getElementById('status').innerText = 'Колесо вращается...';
-      safeHaptic('impact');
+      document.getElementById('btnSpin').disabled = true;
+      document.getElementById('btnClear').disabled = true;
+      document.getElementById('btnDouble').disabled = true;
+      showStatus('Шарик в игре... Ставки приняты!');
+      safeHaptic('spin');
 
-      const fullRotations = (4 + Math.random() * 3) * 2 * Math.PI;
-      const targetAngle = currentAngle + fullRotations;
-      const duration = 4600;
+      // Случайно выбираем выигрышный индекс в колесе
+      const winningIndex = Math.floor(Math.random() * totalSlices);
+      const winningNumber = wheelOrder[winningIndex];
+
+      const duration = 5400; // 5.4 секунды
       const startTime = performance.now();
-      const initialAngle = currentAngle;
 
-      function animate(time) {
-        const elapsed = time - startTime;
-        const progress = Math.min(elapsed / duration, 1);
-        const easeOut = 1 - Math.pow(1 - progress, 3);
-        currentAngle = initialAngle + (targetAngle - initialAngle) * easeOut;
+      const cx = canvas.width / 2;
+      const trackRadius = cx - 18; // Внешний трек шарика
+      const pocketRadius = cx - 45; // Лунка с номерами
 
-        drawWheel(currentAngle);
+      // Вращение колеса (по часовой стрелке)
+      const wheelRotations = (3 + Math.random() * 2) * 2 * Math.PI;
+      const initialWheelAngle = currentWheelAngle;
+      const targetWheelAngle = initialWheelAngle + wheelRotations;
 
-        if (progress < 1) {
-          requestAnimationFrame(animate);
+      // Шарик крутится против часовой стрелки (отрицательный угол)
+      const ballRotations = (6 + Math.random() * 2) * 2 * Math.PI;
+      const initialBallAngle = 0;
+
+      function step(now) {
+        const elapsed = now - startTime;
+        const p = Math.min(elapsed / duration, 1);
+
+        // Плавное торможение колеса
+        const easeWheel = 1 - Math.pow(1 - p, 2.5);
+        currentWheelAngle = initialWheelAngle + (targetWheelAngle - initialWheelAngle) * easeWheel;
+
+        // Физика шарика: быстрое вращение против хода, замедление и падение внутрь
+        const easeBallSpeed = 1 - Math.pow(1 - p, 2);
+        let ballAngle = initialBallAngle - (ballRotations * easeBallSpeed);
+
+        // Радиус шарика: первые 65% времени на внешнем треке, потом падает в лунку
+        let ballRadius = trackRadius;
+        if (p > 0.65) {
+          const dropProgress = (p - 0.65) / 0.35;
+          const dropEase = 1 - Math.pow(1 - dropProgress, 3);
+          // Небольшой отскок шарика
+          const bounce = Math.sin(dropProgress * Math.PI * 4) * (1 - dropProgress) * 7;
+          ballRadius = trackRadius - (trackRadius - pocketRadius) * dropEase + bounce;
+        }
+
+        // К концу шарик фиксируется точно в лунке выпавшего сектора
+        if (p >= 0.95) {
+          const finalSliceCenter = currentWheelAngle + (winningIndex * sliceAngle) + (sliceAngle / 2);
+          ballAngle = finalSliceCenter;
+          ballRadius = pocketRadius;
+        }
+
+        drawRoulette(currentWheelAngle, { angle: ballAngle, radius: ballRadius });
+
+        if (p < 1) {
+          requestAnimationFrame(step);
         } else {
-          finishSpin(bet);
+          onSpinFinished(winningNumber);
         }
       }
-      requestAnimationFrame(animate);
+
+      requestAnimationFrame(step);
     }
 
-    // 7. Расчёт выигрыша
-    function finishSpin(usedBet) {
-      const pointerAngle = 1.5 * Math.PI;
-      let normalized = (pointerAngle - (currentAngle % (2 * Math.PI))) % (2 * Math.PI);
-      if (normalized < 0) normalized += 2 * Math.PI;
+    // 11. Подведение итогов раунда и выплата
+    function onSpinFinished(winNumber) {
+      gameHistory.push(winNumber);
+      renderHistory();
 
-      const winningIndex = Math.floor(normalized / sliceAngle) % totalSlices;
-      const winNum = numbers[winningIndex];
-
-      let winColor = 'black';
-      let colorName = 'Чёрное';
-      if (winNum === 0) {
-        winColor = 'green';
-        colorName = 'Зеро';
-      } else if (redNumbers.includes(winNum)) {
-        winColor = 'red';
-        colorName = 'Красное';
+      let color = 'Зеро';
+      if (winNumber > 0) {
+        color = redNumbers.includes(winNumber) ? 'Красное' : 'Чёрное';
       }
 
-      let isWinner = false;
+      let totalWon = 0;
 
-      if (currentBet.type === 'number') {
-        isWinner = (currentBet.value === winNum);
-      } else if (winNum > 0) {
-        switch (currentBet.type) {
-          case 'red': isWinner = (winColor === 'red'); break;
-          case 'black': isWinner = (winColor === 'black'); break;
-          case 'even': isWinner = (winNum % 2 === 0); break;
-          case 'odd': isWinner = (winNum % 2 !== 0); break;
-          case 'low': isWinner = (winNum >= 1 && winNum <= 18); break;
-          case 'high': isWinner = (winNum >= 19 && winNum <= 36); break;
-          case 'doz1': isWinner = (winNum >= 1 && winNum <= 12); break;
-          case 'doz2': isWinner = (winNum >= 13 && winNum <= 24); break;
-          case 'doz3': isWinner = (winNum >= 25 && winNum <= 36); break;
+      for (let k in placedBets) {
+        const bet = placedBets[k];
+        let won = false;
+
+        if (bet.type === 'number') {
+          won = (parseInt(bet.target, 10) === winNumber);
+        } else if (winNumber > 0) {
+          switch (bet.type) {
+            case 'red': won = redNumbers.includes(winNumber); break;
+            case 'black': won = !redNumbers.includes(winNumber); break;
+            case 'even': won = (winNumber % 2 === 0); break;
+            case 'odd': won = (winNumber % 2 !== 0); break;
+            case 'low': won = (winNumber >= 1 && winNumber <= 18); break;
+            case 'high': won = (winNumber >= 19 && winNumber <= 36); break;
+            case 'doz1': won = (winNumber >= 1 && winNumber <= 12); break;
+            case 'doz2': won = (winNumber >= 13 && winNumber <= 24); break;
+            case 'doz3': won = (winNumber >= 25 && winNumber <= 36); break;
+          }
+        }
+
+        if (won) {
+          totalWon += bet.amount * bet.mult;
         }
       }
 
-      const statusEl = document.getElementById('status');
-      if (isWinner) {
-        const prize = usedBet * currentBet.multiplier;
-        balance += prize;
-        statusEl.innerHTML = `🔥 Выпало: <b>${winNum} (${colorName})</b>. Победа: +${prize}!`;
+      if (totalWon > 0) {
+        balance += totalWon;
+        showStatus(`🎉 Выпало: <b>${winNumber} (${color})</b>! Выигрыш: <b>+${totalWon} 🪙</b>`);
         safeHaptic('win');
       } else {
-        statusEl.innerHTML = `Выпало: <b>${winNum} (${colorName})</b>. Не сыграло.`;
+        showStatus(`Выпало: <b>${winNumber} (${color})</b>. Ставки не сыграли.`);
+        safeHaptic('lose');
       }
 
       saveBalance();
-      isSpinning = false;
-      document.getElementById('spinBtn').disabled = false;
-      betInput.disabled = false;
+      resetBetsVisual();
 
-      // Если после списания баланс стал меньше введённой ставки, корректируем её
-      if (getBetAmount() > balance && balance > 0) {
-        betInput.value = balance;
-        updateBetBadge();
-      }
+      isSpinning = false;
+      document.getElementById('btnClear').disabled = false;
+      document.getElementById('btnDouble').disabled = false;
     }
+
+    // Запуск приложения
+    loadBalance();
   </script>
 </body>
 </html>
