@@ -5,29 +5,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Casino Mini App</title>
   <style>
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-      -webkit-user-select: none;
-    }
     body {
       margin: 0;
-      padding: 16px;
+      padding: 20px;
       background: #121214;
       color: #ffffff;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: sans-serif;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100vh;
+      min-height: 90vh;
       text-align: center;
+      -webkit-user-select: none;
+      user-select: none;
     }
     .balance-box {
       font-size: 1.4rem;
-      font-weight: 700;
-      margin-bottom: 20px;
+      font-weight: bold;
+      margin-bottom: 25px;
       color: #f5a623;
     }
     .machine {
@@ -37,6 +33,7 @@
       border: 2px solid #2d3038;
       display: flex;
       gap: 12px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
     }
     .reel {
       width: 75px;
@@ -49,43 +46,29 @@
       font-size: 3rem;
       border: 1px solid #333;
     }
-    .controls {
+    .result-text {
       margin-top: 25px;
+      font-size: 1.2rem;
+      font-weight: bold;
+      min-height: 30px;
+    }
+    .controls {
+      margin-top: 30px;
     }
     .spin-btn {
       background: #e50914;
       color: #ffffff;
       border: none;
-      padding: 18px 50px;
+      padding: 16px 50px;
       font-size: 1.3rem;
-      font-weight: 800;
+      font-weight: bold;
       border-radius: 40px;
       cursor: pointer;
       box-shadow: 0 4px 15px rgba(229, 9, 20, 0.4);
     }
     .spin-btn:active {
-      transform: scale(0.96);
+      transform: scale(0.95);
       background: #b80710;
-    }
-    .result-text {
-      margin-top: 20px;
-      font-size: 1.1rem;
-      font-weight: 600;
-      min-height: 25px;
-    }
-    /* Панель диагностики на экране */
-    #logBox {
-      margin-top: 25px;
-      padding: 10px;
-      background: rgba(0, 0, 0, 0.6);
-      border: 1px solid #444;
-      border-radius: 8px;
-      font-family: monospace;
-      font-size: 0.8rem;
-      color: #a0ffa0;
-      max-width: 90%;
-      word-break: break-word;
-      text-align: left;
     }
   </style>
 </head>
@@ -94,113 +77,77 @@
   <div class="balance-box">Баланс: <span id="balance">1000</span> 🪙</div>
 
   <div class="machine">
-    <div class="reel" id="reel1">🍒</div>
-    <div class="reel" id="reel2">🍋</div>
-    <div class="reel" id="reel3">7️⃣</div>
+    <div class="reel" id="r1">🍒</div>
+    <div class="reel" id="r2">🍋</div>
+    <div class="reel" id="r3">7️⃣</div>
   </div>
 
-  <div class="result-text" id="result">Нажмите кнопку</div>
+  <div class="result-text" id="status">Нажмите кнопку «КРУТИТЬ»!</div>
 
   <div class="controls">
-    <button class="spin-btn" id="spinBtn" type="button">КРУТИТЬ</button>
+    <button class="spin-btn" id="btn" onclick="startSpin()">КРУТИТЬ</button>
   </div>
 
-  <!-- Окно отладки -->
-  <div id="logBox">Статус: загрузка (Версия 3.0)...</div>
-
   <script>
-    const logEl = document.getElementById("logBox");
-    function log(msg) {
-      logEl.innerHTML += "<br>▶ " + msg;
-    }
+    var symbols = ["🍒", "🍋", "🍇", "🔔", "7️⃣"];
+    var balance = 1000;
+    var bet = 50;
+    var spinning = false;
 
-    // Выводим все системные ошибки прямо на экран
-    window.onerror = function(msg, url, line) {
-      log("<span style='color:red'>ОШИБКА: " + msg + " (стр: " + line + ")</span>");
-      return false;
-    };
-
-    log("Скрипт стартовал");
-
-    const symbols = ["🍒", "🍋", "🍇", "🔔", "7️⃣"];
-    let balance = 1000;
-    const bet = 50;
-    let isSpinning = false;
-
-    const r1 = document.getElementById("reel1");
-    const r2 = document.getElementById("reel2");
-    const r3 = document.getElementById("reel3");
-    const balEl = document.getElementById("balance");
-    const resEl = document.getElementById("result");
-    const btn = document.getElementById("spinBtn");
-
-    function getRandomSymbol() {
+    function getRandomItem() {
       return symbols[Math.floor(Math.random() * symbols.length)];
     }
 
-    function doSpin() {
-      log("Нажатие зарегистрировано!");
-
-      if (isSpinning) {
-        log("Уже крутится, ждём...");
-        return;
-      }
+    function startSpin() {
+      if (spinning) return;
 
       if (balance < bet) {
-        resEl.innerText = "Недостаточно монет!";
-        log("Баланс слишком мал");
+        document.getElementById("status").innerText = "Недостаточно монет!";
         return;
       }
 
-      isSpinning = true;
-      balance -= bet;
-      balEl.innerText = balance;
-      btn.disabled = true;
-      resEl.innerText = "Барабаны крутятся...";
+      spinning = true;
+      balance = balance - bet;
+      document.getElementById("balance").innerText = balance;
+      document.getElementById("status").innerText = "Крутим...";
+      document.getElementById("btn").style.opacity = "0.5";
 
-      let step = 0;
-      const timer = setInterval(() => {
-        r1.innerText = getRandomSymbol();
-        r2.innerText = getRandomSymbol();
-        r3.innerText = getRandomSymbol();
-        step++;
+      var count = 0;
+      var timer = setInterval(function() {
+        document.getElementById("r1").innerText = getRandomItem();
+        document.getElementById("r2").innerText = getRandomItem();
+        document.getElementById("r3").innerText = getRandomItem();
+        count++;
 
-        if (step > 12) {
+        if (count > 15) {
           clearInterval(timer);
 
-          const s1 = getRandomSymbol();
-          const s2 = getRandomSymbol();
-          const s3 = getRandomSymbol();
-          r1.innerText = s1;
-          r2.innerText = s2;
-          r3.innerText = s3;
+          var s1 = getRandomItem();
+          var s2 = getRandomItem();
+          var s3 = getRandomItem();
 
-          let win = 0;
+          document.getElementById("r1").innerText = s1;
+          document.getElementById("r2").innerText = s2;
+          document.getElementById("r3").innerText = s3;
+
+          var win = 0;
           if (s1 === s2 && s2 === s3) {
             win = 250;
-            resEl.innerText = "🎉 Выигрыш: +" + win;
+            document.getElementById("status").innerText = "🔥 3 в ряд! +" + win;
           } else if (s1 === s2 || s2 === s3 || s1 === s3) {
             win = 50;
-            resEl.innerText = "Пара! Возврат: +" + win;
+            document.getElementById("status").innerText = "🎉 Пара! Возврат ставки +" + win;
           } else {
-            resEl.innerText = "Мимо! Попробуйте снова.";
+            document.getElementById("status").innerText = "Мимо. Ещё разок!";
           }
 
-          balance += win;
-          balEl.innerText = balance;
-          isSpinning = false;
-          btn.disabled = false;
-          log("Спин завершен, баланс: " + balance);
+          balance = balance + win;
+          document.getElementById("balance").innerText = balance;
+          spinning = false;
+          document.getElementById("btn").style.opacity = "1";
         }
-      }, 80);
+      }, 70);
     }
-
-    // Привязываем обработчик
-    btn.onclick = function() {
-      doSpin();
-    };
-
-    log("Кнопка готова к нажатию");
   </script>
 </body>
 </html>
